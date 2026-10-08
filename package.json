@@ -1,0 +1,23 @@
+{
+  "name": "priyanshus-little-universe",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Priyanshu Bisht's explorable 3D foothill-town portfolio",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "node --check data.js && node --check content.js && node --check script.js && node --check src/main.js && node --check src/world/create-world.js && node --check src/world/input.js && node --check src/world/character.js && node --check src/world/bus.js && node --check src/world/town.js && node --check src/world/utils.js",
+    "test": "npm run build && node tests/browser-smoke.js"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.21.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "vite": "^7.3.5"
+  },
+  "overrides": {
+    "esbuild": "0.28.1"
+  }
+}
