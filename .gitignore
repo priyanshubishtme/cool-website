@@ -1,1 +1,8 @@
 tests/.chrome-profile/
+node_modules/
+dist/
+tests/artifacts/
+*.log
+.env
+.env.*
+!.env.example
