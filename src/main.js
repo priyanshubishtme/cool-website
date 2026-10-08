@@ -48,7 +48,10 @@ function handleWorldError(error) {
   console.error('3D world unavailable:', error);
   container?.classList.add('world-failed');
   container?.classList.remove('world-ready');
-  if (fallback) fallback.hidden = false;
+  if (fallback) {
+    fallback.hidden = false;
+    fallback.setAttribute('aria-hidden', 'false');
+  }
   if (fallbackMode) {
     if (loading) loading.hidden = true;
     loading?.classList.remove('is-error');
@@ -93,7 +96,10 @@ async function bootWorld() {
         if (loading) loading.hidden = true;
         loading?.classList.remove('is-error');
         loading?.classList.remove('is-error');
-        if (fallback) fallback.hidden = fallbackMode;
+        if (fallback) {
+          fallback.hidden = false;
+          fallback.setAttribute('aria-hidden', String(!fallbackMode));
+        }
         container.dataset.quality = metrics.lowPower ? 'low' : 'high';
         window.dispatchEvent(new CustomEvent('world:ready', { detail: metrics }));
       },
@@ -143,7 +149,10 @@ browseFallback?.addEventListener('click', (event) => {
   worldState = 'fallback';
   if (loading) loading.hidden = true;
   loading?.classList.remove('is-error');
-  if (fallback) fallback.hidden = false;
+  if (fallback) {
+    fallback.hidden = false;
+    fallback.setAttribute('aria-hidden', 'false');
+  }
   container?.classList.add('world-failed');
   container?.classList.remove('world-ready');
   container?.querySelector('.fallback-map-note')?.classList.remove('is-visible');

@@ -201,11 +201,14 @@ footer { display: flex; justify-content: space-between; padding: 28px clamp(22px
 .hero { min-height: max(720px, 100svh); }
 .scene-wrap { min-width: 0; }
 .world-3d { position: absolute; inset: 0; overflow: hidden; outline: none; background: linear-gradient(#83b8b7, #bdd6bb 48%, #88a870); }
-.world-3d canvas { position: absolute; z-index: 1; inset: 0; cursor: grab; }
+.world-3d canvas { position: absolute; z-index: 1; inset: 0; cursor: grab; opacity: 0; transition: opacity .75s cubic-bezier(.2,.7,.2,1); }
 .world-3d canvas:active { cursor: grabbing; }
+.world-ready canvas { opacity: 1; }
 .world-failed canvas { display: none; }
 .world-3d:focus-visible { box-shadow: inset 0 0 0 4px var(--amber); }
-.scene-fallback { z-index: 0; }
+.scene-fallback { z-index: 0; opacity: 1; transition: opacity .75s cubic-bezier(.2,.7,.2,1); }
+.world-ready .scene-fallback[aria-hidden="true"] { opacity: 0; pointer-events: none; }
+.world-failed .scene-fallback { opacity: 1; pointer-events: auto; }
 .scene-fallback[hidden] { display: none; }
 .world-ready .world-loading[hidden] { display: none; }
 .world-loading { position: absolute; z-index: 12; top: 50%; left: 50%; display: flex; align-items: center; gap: 14px; width: min(460px, calc(100% - 40px)); padding: 18px; border: 1px solid rgba(255,255,255,.48); border-radius: 8px; color: var(--paper); background: rgba(19,59,54,.9); box-shadow: var(--shadow); transform: translate(-50%,-50%); backdrop-filter: blur(8px); }
