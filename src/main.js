@@ -142,7 +142,7 @@ async function bootWorld() {
   worldState = 'initializing';
   startupRevealTimer = setTimeout(() => {
     revealStartupExperience();
-  }, 4000);
+  }, 2000);
   if (!('WebGLRenderingContext' in window)) {
     handleWorldError(new Error('WebGL is not available in this browser.'));
     return;
