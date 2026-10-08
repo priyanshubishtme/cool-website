@@ -12,6 +12,40 @@
 <body>
   <a class="skip-link" href="#quick-links">Skip to portfolio navigation</a>
 
+  <dialog class="world-onboarding" id="world-onboarding" aria-labelledby="onboarding-title">
+    <p class="eyebrow">A quick note before you wander</p>
+    <h2 id="onboarding-title">Welcome to my little town.</h2>
+    <p>Walk the stone road, visit a place, or take the Town Loop. Get close and press <kbd>E</kbd> to open a door.</p>
+    <div class="onboarding-controls"><span><kbd>WASD</kbd><small>Walk</small></span><span><kbd>Shift</kbd><small>Run</small></span><span><kbd>Drag</kbd><small>Look around</small></span><span><kbd>E</kbd><small>Interact</small></span></div>
+    <div class="onboarding-map" aria-labelledby="onboarding-map-title">
+      <div class="onboarding-map-heading"><span class="map-note-dot" aria-hidden="true"></span><strong id="onboarding-map-title">Town map</strong><small>Choose a destination</small></div>
+      <div class="mini-map">
+        <span class="mini-map-road road-a" aria-hidden="true"></span>
+        <span class="mini-map-road road-b" aria-hidden="true"></span>
+        <span class="mini-map-water" aria-hidden="true"></span>
+        <div class="mini-building mini-workshop" aria-label="Workshop, Projects">
+          <i class="mini-building-art" aria-hidden="true"><b></b><em></em></i><span>01 <strong>Workshop</strong><small>Projects</small></span>
+        </div>
+        <div class="mini-building mini-library" aria-label="Library, Books and Notes">
+          <i class="mini-building-art" aria-hidden="true"><b></b><em></em></i><span>02 <strong>Library</strong><small>Books &amp; Notes</small></span>
+        </div>
+        <div class="mini-building mini-garden" aria-label="Story Garden, About">
+          <i class="mini-building-art" aria-hidden="true"><b></b><em></em></i><span>03 <strong>Story Garden</strong><small>About me</small></span>
+        </div>
+        <div class="mini-building mini-learning" aria-label="Learning Station, Education and Skills">
+          <i class="mini-building-art" aria-hidden="true"><b></b><em></em></i><span>04 <strong>Learning Station</strong><small>Education</small></span>
+        </div>
+        <div class="mini-building mini-pavilion" aria-label="Trophy Pavilion, Achievements">
+          <i class="mini-building-art" aria-hidden="true"><b></b><em></em></i><span>05 <strong>Trophy Pavilion</strong><small>Achievements</small></span>
+        </div>
+        <div class="mini-building mini-post" aria-label="Post Office, Contact">
+          <i class="mini-building-art" aria-hidden="true"><b></b><em></em></i><span>06 <strong>Post Office</strong><small>Contact</small></span>
+        </div>
+      </div>
+    </div>
+    <div class="onboarding-actions"><button type="button" class="primary-button" data-enter-world>Let's start</button></div>
+  </dialog>
+
   <header class="site-header">
     <a class="brand" href="/" data-route="/" aria-label="Priyanshu's Little Universe, home">
       <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M7 29V15l13-8 13 8v14l-13 7z"/><path d="M14 31V19h12v12M17 19v-5h6v5"/></svg>
@@ -42,16 +76,22 @@
         <button class="intro-dismiss" type="button" data-dismiss-intro aria-label="Dismiss introduction">×</button>
         <p class="eyebrow">Welcome to my little corner of the internet</p>
         <h1 id="welcome-title">Hi, I'm <em>Priyanshu.</em></h1>
-        <p class="intro">Nineteen, a builder and creator, curious about tech, people, ideas and life.</p>
+        <div class="intro-row"><img class="profile-portrait" src="/profile.png" alt="Illustrated portrait of Priyanshu"><p class="intro">I build useful things and collect ideas along the way.</p></div>
         <div class="hero-actions">
-          <button class="primary-button" type="button" data-start-world>Explore the</button> town</button>
-          <a class="text-button" href="#browse">Browse the portfolio <span aria-hidden="true">↓</span></a>
+          <button class="primary-button" type="button" data-start-world>Explore the town</button>
+          <a class="text-button" href="#browse" data-browse-portfolio>Browse the portfolio <span aria-hidden="true">↓</span></a>
         </div>
       </div>
 
       <div class="scene-wrap">
         <div class="world-3d" id="town" tabindex="0" aria-label="A real-time 3D foothill town. Use WASD or arrow keys to move, drag to orbit, and press E to interact.">
           <div class="scene scene-fallback" data-scene-fallback aria-label="Illustrated fallback town with direct destination controls.">
+          <svg class="fallback-road" viewBox="0 0 1200 800" preserveAspectRatio="none" aria-hidden="true">
+            <path class="fallback-road-edge" d="M710 690 C610 650 520 605 520 510 C520 440 585 390 680 330 C755 280 820 260 915 275 C1000 290 1035 365 1005 465 C985 560 900 635 825 690 C700 705 520 690 390 680 C300 670 285 585 365 520 C420 475 465 470 520 510"/>
+            <path class="fallback-road-surface" d="M710 690 C610 650 520 605 520 510 C520 440 585 390 680 330 C755 280 820 260 915 275 C1000 290 1035 365 1005 465 C985 560 900 635 825 690 C700 705 520 690 390 680 C300 670 285 585 365 520 C420 475 465 470 520 510"/>
+            <path class="fallback-road-center" d="M710 690 C610 650 520 605 520 510 C520 440 585 390 680 330 C755 280 820 260 915 275 C1000 290 1035 365 1005 465 C985 560 900 635 825 690 C700 705 520 690 390 680 C300 670 285 585 365 520 C420 475 465 470 520 510"/>
+          </svg>
+          <svg class="mobile-road" viewBox="0 0 400 1040" preserveAspectRatio="none" aria-hidden="true"><path class="road-edge" d="M200 45 C200 95 77 90 77 137 S323 205 323 264 S77 330 77 392 S323 458 323 519 S77 584 77 647 S323 711 323 774 S200 895 200 1000"/><path class="road-surface" d="M200 45 C200 95 77 90 77 137 S323 205 323 264 S77 330 77 392 S323 458 323 519 S77 584 77 647 S323 711 323 774 S200 895 200 1000"/><path class="road-center" d="M200 45 C200 95 77 90 77 137 S323 205 323 264 S77 330 77 392 S323 458 323 519 S77 584 77 647 S323 711 323 774 S200 895 200 1000"/></svg>
           <div class="sky" aria-hidden="true">
             <span class="sun"></span>
             <span class="cloud cloud-one"></span>
@@ -101,13 +141,20 @@
             <span class="place-label"><small>Let's talk</small>Post Office</span>
           </button>
 
+          <nav class="map-rail" aria-label="Town map destinations">
+            <a class="map-rail-home" href="/" data-route="/" aria-label="Return to the town map"><span aria-hidden="true">?</span></a>
+            <a href="/projects" data-route="/projects"><span>01</span><small>Workshop</small></a>
+            <a href="/about" data-route="/about"><span>02</span><small>Story Garden</small></a>
+            <a href="/contact" data-route="/contact"><span>03</span><small>Post Office</small></a>
+          </nav>
+          <p class="fallback-map-note"><span class="map-note-dot" aria-hidden="true"></span> Town map <span aria-hidden="true">·</span> choose a place to explore</p>
+
           <button class="bus" type="button" data-bus aria-label="Take the town bus to a destination">
             <span class="bus-board">TOWN LOOP</span><i class="bus-window b1"></i><i class="bus-window b2"></i><i class="bus-door"></i><i class="wheel wheel-one"></i><i class="wheel wheel-two"></i>
           </button>
 
           <div class="avatar" aria-hidden="true"><i class="head"></i><i class="body"></i><i class="leg l1"></i><i class="leg l2"></i></div>
           <div class="guide-spirit" aria-hidden="true"><i></i><i></i><i></i></div>
-          <div class="guide-bubble">Welcome to my little corner of the internet. Visit the workshop, open a book, or take the bus.<span aria-hidden="true"></span></div>
           <div class="lantern lantern-one" aria-hidden="true"></div>
           <div class="lantern lantern-two" aria-hidden="true"></div>
           <div class="floating-paper" aria-hidden="true"></div>
@@ -115,8 +162,8 @@
 
           <div class="world-loading" data-world-loading role="status">
             <span class="loading-orbit" aria-hidden="true"></span>
-            <div><strong>Preparing the foothill town…</strong><small>Portfolio links are ready while the 3D world loads.</small></div>
-            <a href="#browse">Browse without 3D</a>
+            <div><strong data-world-loading-title>Preparing the foothill town…</strong><small data-world-loading-detail>Portfolio links are ready while the 3D world loads.</small></div>
+            <a href="#town" data-browse-fallback>Browse without 3D</a>
           </div>
 
           <div class="world-toolbar" aria-label="World controls">
@@ -127,6 +174,7 @@
 
           <div class="destination-drawer" id="destination-drawer" hidden>
             <div><strong>Town destinations</strong><button type="button" data-close-destinations aria-label="Close destinations">×</button></div>
+            <a href="/bus" data-route="/bus">Ride the Town Loop <small>Choose a bus stop</small></a>
             <a href="/projects" data-route="/projects">Maker Workshop <small>Projects</small></a>
             <a href="/books" data-route="/books">Library <small>Books</small></a>
             <a href="/notes" data-route="/notes">Writing Desk <small>Notes</small></a>
@@ -157,14 +205,15 @@
 
     <section class="browse" id="browse" aria-labelledby="browse-title">
       <div class="section-heading">
-        <p class="eyebrow">The practical path</p>
-        <h2 id="browse-title">Not in the mood to wander?</h2>
-        <p>Everything in the town is also a straightforward, readable portfolio.</p>
+        <p class="eyebrow">The portfolio, at a glance</p>
+        <h2 id="browse-title">Choose a place to explore</h2>
+        <p>Prefer a simple portfolio? Open any destination here, or return to the 3D town.</p>
+        <button class="portfolio-return" type="button" data-return-to-town>Return to the town</button>
       </div>
       <div class="browse-grid">
-        <a class="browse-card projects-card" href="/projects" data-route="/projects"><span class="card-number">01</span><div><p>Featured work</p><h3>See what I've built</h3><span class="card-link">AshaPure · Arena Self-Driving →</span></div></a>
-        <a class="browse-card story-card" href="/about" data-route="/about"><span class="card-number">02</span><div><p>My path so far</p><h3>Meet the person behind the work</h3><span class="card-link">Read my story →</span></div></a>
-        <a class="browse-card contact-card" href="/contact" data-route="/contact"><span class="card-number">03</span><div><p>Have an idea?</p><h3>Let's make something useful</h3><span class="card-link">Start a conversation →</span></div></a>
+        <a class="browse-card projects-card" href="/projects" data-route="/projects"><span class="card-number">01</span><div><p>Maker Workshop</p><h3>Projects</h3><span class="card-link">AshaPure &middot; Arena Self-Driving &rarr;</span></div></a>
+        <a class="browse-card story-card" href="/about" data-route="/about"><span class="card-number">02</span><div><p>My path so far</p><h3>Meet the person behind the work</h3><span class="card-link">Read my story &rarr;</span></div></a>
+        <a class="browse-card contact-card" href="/contact" data-route="/contact"><span class="card-number">03</span><div><p>Have an idea?</p><h3>Let's make something useful</h3><span class="card-link">Start a conversation &rarr;</span></div></a>
       </div>
     </section>
 
@@ -185,16 +234,18 @@
   <aside class="guide-dock" aria-label="Portfolio Guide">
     <button class="guide-toggle" type="button" aria-expanded="false" aria-controls="guide-panel">
       <span class="guide-orb" aria-hidden="true"><i></i></span>
-      <span><small>Portfolio Guide</small>Talk to me</span>
+      <span><small>Little Universe Help Desk</small>Ask about Priyanshu</span>
     </button>
     <div class="guide-panel" id="guide-panel" hidden>
-      <div class="guide-panel-heading"><div><p>Portfolio Guide</p><small>Navigation help · not live chat</small></div><button type="button" data-close-guide aria-label="Close Portfolio Guide">×</button></div>
-      <p>Where would you like to go?</p>
+      <div class="guide-panel-heading"><div><p>Little Universe Help Desk</p><small>Ask a question · get a straight answer</small></div><button type="button" data-close-guide aria-label="Close help desk">×</button></div>
+      <p>What would you like to know about me?</p>
       <div class="guide-actions">
-        <button type="button" data-guide-action="projects">Tell me about your projects</button>
-        <button type="button" data-guide-action="contact">How can I contact Priyanshu?</button>
-        <button type="button" data-guide-action="skills">What technologies does he use?</button>
-        <button type="button" data-guide-action="experience">Show me his experience</button>
+        <button type="button" data-guide-action="work">What do you do?</button>
+        <button type="button" data-guide-action="drives">What drives you?</button>
+        <button type="button" data-guide-action="stack">What is your tech stack?</button>
+        <button type="button" data-guide-action="purpose">What is your purpose?</button>
+        <button type="button" data-guide-action="future">Where do you see yourself in 5 years?</button>
+        <button type="button" data-guide-action="motivation">What keeps you motivated?</button>
       </div>
       <div class="guide-answer" role="status" aria-live="polite"></div>
     </div>

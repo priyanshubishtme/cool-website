@@ -5,13 +5,22 @@ const fallback = container?.querySelector('[data-scene-fallback]');
 const prompt = container?.querySelector('[data-interaction-prompt]');
 const promptText = prompt?.querySelector('span');
 const intro = document.querySelector('[data-intro-card]');
+const onboarding = document.querySelector('#world-onboarding');
 const destinations = document.querySelector('#destination-drawer');
 const help = document.querySelector('#world-help');
 const destinationToggle = document.querySelector('[data-toggle-destinations]');
 const helpToggle = document.querySelector('[data-toggle-help]');
+const browseFallback = document.querySelector('[data-browse-fallback]');
+const loadingTitle = container?.querySelector('[data-world-loading-title]');
+const loadingDetail = container?.querySelector('[data-world-loading-detail]');
 let nearest = null;
 let currentMode = 'paused';
 let world = null;
+let portfolioMode = location.hash === '#browse';
+let startedWorld = false;
+let fallbackMode = false;
+let worldState = 'idle';
+let reportedWorldError = false;
 
 function setExpanded(button, panel, open) {
   if (!button || !panel) return;
@@ -24,6 +33,7 @@ function setMode(mode) {
   world?.setMode(mode);
   container?.classList.toggle('world-input-active', mode === 'world');
   document.body.classList.toggle('world-mode', mode === 'world');
+  document.body.classList.toggle('world-session', startedWorld && !portfolioMode);
 }
 
 function openRoute(route, source = 'world') {
@@ -31,18 +41,34 @@ function openRoute(route, source = 'world') {
 }
 
 function handleWorldError(error) {
+  if (reportedWorldError) return;
+  reportedWorldError = true;
+  worldState = 'error';
+  const message = error instanceof Error ? error.message : String(error);
   console.error('3D world unavailable:', error);
   container?.classList.add('world-failed');
   container?.classList.remove('world-ready');
   if (fallback) fallback.hidden = false;
-  if (loading) {
-    loading.innerHTML = '<div><strong>The 3D town could not start.</strong><small>The complete portfolio and illustrated destination fallback remain available.</small></div><a href="#browse">Browse the portfolio</a>';
+  if (fallbackMode) {
+    if (loading) loading.hidden = true;
+    loading?.classList.remove('is-error');
+    return;
   }
+  if (loading) loading.hidden = false;
+  loading?.classList.add('is-error');
+  if (loadingTitle) loadingTitle.textContent = '3D town unavailable';
+  if (loadingDetail) loadingDetail.textContent = `${message} You can continue with the illustrated town.`;
+  loading?.querySelector('.loading-orbit')?.setAttribute('aria-hidden', 'true');
+  container?.querySelector('.fallback-map-note')?.classList.add('is-visible');
+  const hint = document.querySelector('[data-orientation-hint]');
+  if (hint) hint.textContent = 'Town map ? choose a place to explore ? portfolio links are in the header';
   window.dispatchEvent(new CustomEvent('world:error', { detail: { message: error.message } }));
 }
 
 async function bootWorld() {
   if (!container) return;
+  if (worldState !== 'idle') return;
+  worldState = 'initializing';
   if (!('WebGLRenderingContext' in window)) {
     handleWorldError(new Error('WebGL is not available in this browser.'));
     return;
@@ -60,10 +86,14 @@ async function bootWorld() {
       },
       onBusState: (value) => window.dispatchEvent(new CustomEvent('world:bus-state', { detail: value })),
       onReady: (metrics) => {
+        worldState = 'ready';
+        reportedWorldError = false;
         container.classList.add('world-ready');
-        container.classList.remove('world-failed');
+        if (!fallbackMode) container.classList.remove('world-failed');
         if (loading) loading.hidden = true;
-        if (fallback) fallback.hidden = true;
+        loading?.classList.remove('is-error');
+        loading?.classList.remove('is-error');
+        if (fallback) fallback.hidden = fallbackMode;
         container.dataset.quality = metrics.lowPower ? 'low' : 'high';
         window.dispatchEvent(new CustomEvent('world:ready', { detail: metrics }));
       },
@@ -76,8 +106,7 @@ async function bootWorld() {
   }
 }
 
-if ('requestIdleCallback' in window) requestIdleCallback(bootWorld, { timeout: 700 });
-else setTimeout(bootWorld, 1);
+bootWorld();
 
 window.addEventListener('app:mode', (event) => {
   const next = event.detail?.mode || 'world';
@@ -91,14 +120,59 @@ window.addEventListener('app:mode', (event) => {
 
 window.addEventListener('beforeunload', () => world?.dispose(), { once: true });
 
-document.querySelector('[data-start-world]')?.addEventListener('click', () => {
+function setPortfolioMode(enabled, { updateHistory = true } = {}) {
+  portfolioMode = enabled;
+  document.body.classList.toggle('portfolio-mode', enabled);
+  if (enabled) { setMode('paused'); document.querySelector('[data-intro-card]')?.classList.add('is-collapsed'); }
+  else { document.body.classList.remove('portfolio-mode'); if (startedWorld) setMode('world'); }
+  if (updateHistory) {
+    if (enabled && location.hash !== '#browse') history.pushState({ route: '/', depth: 0, browse: true }, '', '/#browse');
+    else if (!enabled && location.hash === '#browse') history.replaceState({ route: '/', depth: 0 }, '', '/');
+  }
+}
+
+if (portfolioMode) { document.body.classList.add('portfolio-mode'); document.querySelector('[data-intro-card]')?.classList.add('is-collapsed'); }
+document.querySelectorAll('[data-browse-portfolio]').forEach((link) => link.addEventListener('click', (event) => {
+  event.preventDefault();
+  if (onboarding?.open) onboarding.close('browse');
+  setPortfolioMode(true);
+}));
+browseFallback?.addEventListener('click', (event) => {
+  event.preventDefault();
+  fallbackMode = true;
+  worldState = 'fallback';
+  if (loading) loading.hidden = true;
+  loading?.classList.remove('is-error');
+  if (fallback) fallback.hidden = false;
+  container?.classList.add('world-failed');
+  container?.classList.remove('world-ready');
+  container?.querySelector('.fallback-map-note')?.classList.remove('is-visible');
+  setMode('paused');
+});
+document.querySelector('[data-return-to-town]')?.addEventListener('click', () => {
+  if (history.state?.browse) history.back();
+  else setPortfolioMode(false);
+});
+window.addEventListener('popstate', () => {
+  const browsing = location.hash === '#browse' && location.pathname === '/';
+  if (browsing !== portfolioMode) setPortfolioMode(browsing, { updateHistory: false });
+});
+
+function enterWorld() {
+  if (onboarding?.open) onboarding.close('enter');
   intro?.classList.add('is-collapsed');
+  startedWorld = true;
+  setPortfolioMode(false, { updateHistory: false });
   setMode('world');
   container.focus({ preventScroll: true });
   container.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
   const hint = document.querySelector('[data-orientation-hint]');
   if (hint) setTimeout(() => hint.classList.add('is-quiet'), 6500);
+}
+document.querySelector('[data-start-world]')?.addEventListener('click', () => {
+  if (onboarding && !onboarding.open) onboarding.showModal();
 });
+document.querySelector('[data-enter-world]')?.addEventListener('click', enterWorld);
 
 document.querySelector('[data-dismiss-intro]')?.addEventListener('click', () => intro?.classList.add('is-collapsed'));
 document.querySelector('[data-return-courtyard]')?.addEventListener('click', () => {

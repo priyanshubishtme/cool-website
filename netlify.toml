@@ -6,3 +6,26 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Vite filenames include content hashes, so browsers can keep immutable chunks cached.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Revalidate the entry document so each release can point at its new hashed assets.
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Keep the public portrait fresh if it changes independently of the app bundle.
+[[headers]]
+  for = "/profile.png"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

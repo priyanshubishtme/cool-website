@@ -23,10 +23,12 @@ window.LITTLE_UNIVERSE_DATA = Object.freeze({
     { label: 'Contact', route: '/contact' }
   ],
   guideActions: {
-    projects: { route: '/projects', feedback: 'Opened the Maker Workshop and its two supplied project exhibits.' },
-    contact: { route: '/contact', feedback: 'Opened the Post Office with Priyanshu’s public contact links.' },
-    skills: { route: '/education', feedback: 'Opened the Learning Station with skills and education.' },
-    experience: { route: '/experience', feedback: 'Opened the Learning Station noticeboard with current experience.' }
+    work: { answer: 'I build useful web products from idea to delivery: interfaces, APIs, databases and the systems that connect them. I also explore AI and data science through hands-on experiments.' },
+    drives: { answer: 'Curiosity drives me first. I like taking a difficult or unclear idea, making it understandable, and shipping something people can actually use.' },
+    stack: { answer: 'My core stack is JavaScript, React.js, Node.js, Express.js, MongoDB, MySQL, Python, Git and data structures. I also work with FastAPI, NumPy and Gymnasium for experiments.' },
+    purpose: { answer: 'My purpose is to keep learning by building, share what I learn, and make the path easier for people around me—especially juniors who are just starting.' },
+    future: { answer: 'In five years, I see myself as a dependable product engineer and builder: leading meaningful systems, going deeper into AI, and creating work that is useful beyond a portfolio.' },
+    motivation: { answer: 'Progress motivates me: a working feature, a clearer explanation, a hard problem becoming simple, or a small moment where something I built helps someone else.' }
   },
   landmarks: {
     '/projects': { id: 'workshop', label: 'Maker Workshop' },

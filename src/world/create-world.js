@@ -10,6 +10,7 @@ const FIXED_STEP = 1 / 60;
 const PLAYER_RADIUS = .35;
 const PLAYER_HALF_HEIGHT = .55;
 const PLAYER_CENTER_HEIGHT = PLAYER_RADIUS + PLAYER_HALF_HEIGHT;
+const SPAWN_POSITION = new THREE.Vector3(0, PLAYER_CENTER_HEIGHT, 0);
 const UP = new THREE.Vector3(0, 1, 0);
 
 export function createWorld(options = {}) {
@@ -26,6 +27,7 @@ export function createWorld(options = {}) {
   let accumulator = 0;
   let frameCount = 0;
   let averageFps = 0;
+  let labelUpdateElapsed = 0;
   let nearest = null;
   let previousNearKey = '';
   let actualCameraDistance = 7;
@@ -49,15 +51,19 @@ export function createWorld(options = {}) {
   let input;
   let resizeObserver;
   let lowPower = false;
+  let initializationStage = 'starting';
 
   const velocity = new THREE.Vector3();
-  const playerPosition = new THREE.Vector3(0, PLAYER_CENTER_HEIGHT, 2.5);
+  const playerPosition = SPAWN_POSITION.clone();
+  const previousPlayerPosition = SPAWN_POSITION.clone();
+  const renderPlayerPosition = SPAWN_POSITION.clone();
   const cameraTarget = new THREE.Vector3();
   const desiredCameraPosition = new THREE.Vector3();
   const raycaster = new THREE.Raycaster();
   const orbit = { yaw: Math.PI, pitch: .38, distance: 7, pointerId: null, x: 0, y: 0 };
   const eventCleanups = [];
   const originalContainerPosition = container.style.position;
+  const raycastMeshes = [];
 
   const reportError = (error) => {
     const normalized = error instanceof Error ? error : new Error(String(error));
@@ -141,6 +147,7 @@ export function createWorld(options = {}) {
 
   function teleport(position) {
     playerPosition.copy(position);
+    previousPlayerPosition.copy(position);
     velocity.set(0, 0, 0);
     grounded = false;
     coyoteTime = 0;
@@ -189,8 +196,14 @@ export function createWorld(options = {}) {
   function updateBus(dt) {
     if (!bus) return;
     bus.update(dt);
-    if (!bus.occupied) return;
+    if (!bus.occupied) {
+      if (character) character.object.visible = true;
+      return;
+    }
+    // Keep the player inside the coach silhouette during travel; the old head-over-roof view was distracting.
+    character.object.visible = false;
     bus.seatAnchor.getWorldPosition(playerPosition);
+    previousPlayerPosition.copy(playerPosition);
     playerBody.setNextKinematicTranslation(playerPosition);
     velocity.set(0, 0, 0);
     grounded = true;
@@ -204,13 +217,15 @@ export function createWorld(options = {}) {
     }
     if (!canOwnInput()) return;
 
+    previousPlayerPosition.copy(playerPosition);
+
     const movement = input.getMove();
     const cameraForward = new THREE.Vector3(-Math.sin(orbit.yaw), 0, -Math.cos(orbit.yaw));
     const cameraRight = new THREE.Vector3(Math.cos(orbit.yaw), 0, -Math.sin(orbit.yaw));
     const desiredDirection = cameraForward.multiplyScalar(movement.y).addScaledVector(cameraRight, movement.x);
     if (desiredDirection.lengthSq() > 1) desiredDirection.normalize();
-    const desiredSpeed = input.isRunning() ? 5.6 : 3.25;
-    const response = grounded ? 16 : 5;
+    const desiredSpeed = input.isRunning() ? 10.5 : 6.2;
+    const response = grounded ? 19 : 5;
     velocity.x = damp(velocity.x, desiredDirection.x * desiredSpeed, response, dt);
     velocity.z = damp(velocity.z, desiredDirection.z * desiredSpeed, response, dt);
 
@@ -242,7 +257,7 @@ export function createWorld(options = {}) {
     playerPosition.set(translation.x + corrected.x, translation.y + corrected.y, translation.z + corrected.z);
     playerBody.setNextKinematicTranslation(playerPosition);
     physics.step();
-    if (playerPosition.y < -8 || playerPosition.lengthSq() > 2500) teleport(new THREE.Vector3(0, PLAYER_CENTER_HEIGHT, 2.5));
+    if (playerPosition.y < -8 || playerPosition.lengthSq() > 2500) teleport(SPAWN_POSITION);
   }
 
   function updateNearest() {
@@ -278,18 +293,28 @@ export function createWorld(options = {}) {
     }
   }
 
-  function updateCamera(dt) {
+  function updateCamera(dt, targetPosition = playerPosition) {
+    if (!scene || !camera) return;
+    scene.updateMatrixWorld(true);
     if (bus?.occupied) {
-      bus.seatAnchor.getWorldPosition(cameraTarget);
-      cameraTarget.y += .9;
+      bus.root.getWorldPosition(cameraTarget);
+      cameraTarget.y += 1.05;
       bus.cameraAnchor.getWorldPosition(desiredCameraPosition);
-      camera.position.lerp(desiredCameraPosition, 1 - Math.exp(-5 * dt));
+      const direction = desiredCameraPosition.clone().sub(cameraTarget);
+      const desiredDistance = direction.length();
+      direction.normalize();
+      raycaster.set(cameraTarget, direction);
+      raycaster.far = desiredDistance;
+      const hit = raycaster.intersectObjects(raycastMeshes, false).find((entry) => entry.object?.userData?.cameraObstacle);
+      const allowedDistance = hit ? Math.max(2.8, hit.distance - .4) : desiredDistance;
+      actualCameraDistance = damp(actualCameraDistance || desiredDistance, allowedDistance, hit ? 20 : 4.5, dt);
+      camera.position.copy(cameraTarget).addScaledVector(direction, Math.min(desiredDistance, actualCameraDistance));
       camera.up.copy(UP);
       camera.lookAt(cameraTarget);
-      actualCameraDistance = camera.position.distanceTo(cameraTarget);
+      camera.updateMatrixWorld(true);
       return;
     }
-    cameraTarget.set(playerPosition.x, playerPosition.y + .7, playerPosition.z);
+    cameraTarget.set(targetPosition.x, targetPosition.y + .7, targetPosition.z);
     desiredCameraPosition.set(
       Math.sin(orbit.yaw) * Math.cos(orbit.pitch),
       Math.sin(orbit.pitch),
@@ -301,15 +326,20 @@ export function createWorld(options = {}) {
     direction.normalize();
     raycaster.set(cameraTarget, direction);
     raycaster.far = desiredDistance;
-    const hit = raycaster.intersectObjects(scene.children, true).find((entry) => entry.object.userData.cameraObstacle);
+    const hit = raycaster.intersectObjects(raycastMeshes, false).find((entry) => entry.object?.userData?.cameraObstacle);
     const allowedDistance = hit ? Math.max(1.25, hit.distance - .32) : desiredDistance;
     actualCameraDistance = damp(actualCameraDistance, allowedDistance, hit ? 22 : 7, dt);
     camera.position.copy(cameraTarget).addScaledVector(direction, Math.min(desiredDistance, actualCameraDistance));
     camera.lookAt(cameraTarget);
+    camera.updateMatrixWorld(true);
   }
 
   function updateLabels() {
     if (!town || !renderer) return;
+    if (mode !== 'world') {
+      town.labels.forEach(({ element }) => { element.style.display = 'none'; });
+      return;
+    }
     const width = renderer.domElement.clientWidth;
     const height = renderer.domElement.clientHeight;
     const cameraToLabel = new THREE.Vector3();
@@ -322,7 +352,10 @@ export function createWorld(options = {}) {
       if (inView && distance < 38) {
         raycaster.set(camera.position, cameraToLabel.normalize());
         raycaster.far = Math.max(0, distance - .35);
-        occluded = Boolean(raycaster.intersectObjects(scene.children, true).find((entry) => entry.object.userData.cameraObstacle));
+        occluded = Boolean(
+          raycaster.intersectObjects(raycastMeshes, false)
+            .find((entry) => entry.object?.userData?.cameraObstacle),
+        );
       }
       const visible = mode === 'world' && inView && distance < 38 && !occluded;
       label.element.style.display = visible ? 'block' : 'none';
@@ -351,22 +384,29 @@ export function createWorld(options = {}) {
       accumulator -= FIXED_STEP;
     }
     updateNearest();
-    const visualPosition = playerPosition.clone();
+    renderPlayerPosition.copy(previousPlayerPosition).lerp(playerPosition, accumulator / FIXED_STEP);
+    const visualPosition = renderPlayerPosition.clone();
     visualPosition.y -= PLAYER_CENTER_HEIGHT;
     character.update({ position: visualPosition, velocity, grounded, dt, facing, seated: bus?.occupied });
-    updateCamera(dt);
-    updateLabels();
+    updateCamera(dt, renderPlayerPosition);
+    labelUpdateElapsed += dt;
+    if (labelUpdateElapsed >= .1) {
+      updateLabels();
+      labelUpdateElapsed = 0;
+    }
     renderer.render(scene, camera);
     frameId = requestAnimationFrame(renderFrame);
   }
 
   async function initialize() {
     try {
+      initializationStage = 'physics';
       await RAPIER.init();
       if (disposed) return;
       lowPower = Number(navigator.deviceMemory || 8) <= 4;
       if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
 
+      initializationStage = 'renderer';
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0xa9d6d4);
       scene.fog = new THREE.FogExp2(0xa9d6d4, .014);
@@ -385,7 +425,7 @@ export function createWorld(options = {}) {
       const sun = new THREE.DirectionalLight(0xffe0a3, 3.1);
       sun.position.set(-15, 24, 10);
       sun.castShadow = true;
-      sun.shadow.mapSize.set(lowPower ? 1024 : 2048, lowPower ? 1024 : 2048);
+      sun.shadow.mapSize.set(lowPower ? 512 : 2048, lowPower ? 512 : 2048);
       sun.shadow.camera.left = sun.shadow.camera.bottom = -26;
       sun.shadow.camera.right = sun.shadow.camera.top = 26;
       sun.shadow.camera.near = 2;
@@ -393,6 +433,7 @@ export function createWorld(options = {}) {
       sun.shadow.bias = -.00025;
       scene.add(sun);
 
+      initializationStage = 'town';
       physics = new RAPIER.World({ x: 0, y: -18.5, z: 0 });
       physics.timestep = FIXED_STEP;
       town = createTown({ scene, physics, RAPIER, container, lowPower });
@@ -407,10 +448,17 @@ export function createWorld(options = {}) {
       characterController.setMaxSlopeClimbAngle(50 * Math.PI / 180);
       characterController.setMinSlopeSlideAngle(58 * Math.PI / 180);
 
+      initializationStage = 'character';
       character = createCharacter();
       scene.add(character.object);
+      scene.traverse((object) => {
+        if (object.isMesh && object.geometry && object.userData.cameraObstacle) raycastMeshes.push(object);
+      });
+      initializationStage = 'bus';
       bus = createBus({
         scene,
+        physics,
+        RAPIER,
         curve: town.roadCurve,
         stops: town.stops,
         onState: (value) => emit('onBusState', value),
@@ -419,6 +467,7 @@ export function createWorld(options = {}) {
       input = createInput(container, canOwnInput);
       setupCameraInput();
 
+      initializationStage = 'finalizing';
       resizeObserver = new ResizeObserver(resize);
       resizeObserver.observe(container);
       resize();
@@ -430,7 +479,9 @@ export function createWorld(options = {}) {
       eventCleanups.push(() => renderer?.domElement.removeEventListener('webglcontextlost', contextLost));
 
       initialized = true;
-      updateCamera(FIXED_STEP);
+      scene.updateMatrixWorld(true);
+      camera.position.set(0, 4.2, 7);
+      camera.lookAt(0, .9, 0);
       renderer.render(scene, camera);
       emit('onReady', {
         lowPower,
@@ -441,7 +492,9 @@ export function createWorld(options = {}) {
       });
       ensureFrame();
     } catch (error) {
-      reportError(error);
+      const message = error instanceof Error ? error.message : String(error);
+      api.dispose();
+      throw new Error(`3D initialization failed during ${initializationStage}: ${message}`, { cause: error });
     }
   }
 
@@ -460,7 +513,7 @@ export function createWorld(options = {}) {
     start() {
       if (disposed) return api;
       started = true;
-      if (!initializing) initializing = initialize();
+      if (!initializing) initializing = initialize().catch((error) => reportError(error));
       else ensureFrame();
       return api;
     },
@@ -480,7 +533,7 @@ export function createWorld(options = {}) {
       if (disposed) return false;
       if (busActive()) bus?.skip();
       mode = 'world';
-      teleport(new THREE.Vector3(0, PLAYER_CENTER_HEIGHT, 2.5));
+      teleport(SPAWN_POSITION);
       input?.clear();
       ensureFrame();
       return true;
@@ -530,6 +583,7 @@ export function createWorld(options = {}) {
         cameraDistance: actualCameraDistance,
         nearestRoute: nearest?.route || null,
         busState: bus?.state || 'uninitialized',
+        busOccupied: Boolean(bus?.occupied),
         busRouteProgress: bus?.progress ?? 0,
         busDistance: bus ? Number(playerPosition.distanceTo(bus.root.position).toFixed(2)) : null,
         busPosition: bus ? { x: bus.root.position.x, z: bus.root.position.z } : null,

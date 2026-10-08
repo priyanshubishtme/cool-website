@@ -154,6 +154,11 @@ async function run() {
     assert.equal(await cdp.evaluate("document.querySelectorAll('#town canvas').length"), 1);
     assert.equal(await cdp.evaluate("document.querySelector('[data-scene-fallback]').hidden"), true);
     await cdp.evaluate("document.querySelector('[data-start-world]').click()");
+    await waitFor(cdp, "!document.querySelector('#world-onboarding').hidden", 'town instructions and map');
+    assert.equal(await cdp.evaluate("document.querySelectorAll('.mini-building').length"), 6);
+    assert.equal(await cdp.evaluate("document.querySelectorAll('.mini-building[data-route], .mini-building a, .mini-building button').length"), 0);
+    assert.equal(await cdp.evaluate("document.querySelector('[data-enter-world]').textContent"), "Let's start");
+    await cdp.evaluate("document.querySelector('[data-enter-world]').click()");
     await waitFor(cdp, "window.LITTLE_UNIVERSE_WORLD.getDebugState().mode === 'world'", 'world input mode');
 
     await cdp.evaluate("window.LITTLE_UNIVERSE_WORLD.returnToCourtyard(); document.querySelector('#town').focus()");
@@ -280,9 +285,12 @@ async function run() {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
     await navigate(cdp, '/');
     await waitFor(cdp, "window.LITTLE_UNIVERSE_WORLD?.getDebugState().ready === true", 'mobile 3D world readiness');
+    assert.equal(await cdp.evaluate("document.body.classList.contains('mobile-html-mode')"), false, 'mobile should use the physical world when WebGL is available');
     assert.equal(await cdp.evaluate("getComputedStyle(document.querySelector('.mobile-world-controls')).display"), 'none');
     assert.equal(await cdp.evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1'), true);
-    await cdp.evaluate("document.querySelector('[data-start-world]').click(); document.querySelector('#town').focus()");
+    await cdp.evaluate("document.querySelector('[data-start-world]').click()");
+    await waitFor(cdp, "!document.querySelector('#world-onboarding').hidden", 'mobile town instructions and map');
+    await cdp.evaluate("document.querySelector('[data-enter-world]').click(); document.querySelector('#town').focus()");
     assert.equal(await cdp.evaluate("getComputedStyle(document.querySelector('.mobile-world-controls')).display"), 'flex');
     const touchStart = await cdp.evaluate("window.LITTLE_UNIVERSE_WORLD.getDebugState().playerPosition");
     await cdp.evaluate(`(() => { const el=document.querySelector('[data-joystick]'); const r=el.getBoundingClientRect(); el.dispatchEvent(new PointerEvent('pointerdown',{pointerId:11,clientX:r.left+r.width/2,clientY:r.top+r.height/2,bubbles:true})); el.dispatchEvent(new PointerEvent('pointermove',{pointerId:11,clientX:r.left+r.width/2+35,clientY:r.top+r.height/2-35,bubbles:true})); })()`);

@@ -189,6 +189,12 @@
   function guideAction(action) {
     const target = data.guideActions[action];
     if (!target) return;
+    if (target.answer) {
+      guideAnswer.textContent = target.answer;
+      guideAnswer.classList.remove('answer-reveal');
+      requestAnimationFrame(() => guideAnswer.classList.add('answer-reveal'));
+      return;
+    }
     toggleGuide(false, { restoreFocus: false });
     renderRoute(target.route);
     showToast(target.feedback);
@@ -263,6 +269,7 @@
       const isPlainClick = event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
       if (!isPlainClick) return;
       event.preventDefault();
+      document.querySelector('#world-onboarding')?.close();
       closeMenu();
       renderRoute(routeTarget.dataset.route);
       return;
