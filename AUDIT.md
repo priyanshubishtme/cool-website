@@ -19,6 +19,8 @@ Audit date: 2026-10-08
 - Keyboard-visible focus, Escape close, basic focus trap, and reduced-motion CSS.
 - Responsive scene and readable mobile content sheet.
 - Netlify history fallback for direct SPA routes.
+- Production entry point is `/src/main.js`; `index.html` now references the file that exists in the repository.
+- `netlify.toml` publishes `dist` after `npm run build` and rewrites direct client-side routes to `/index.html`.
 
 ## Partially working before this build
 
@@ -62,8 +64,9 @@ Keep the static zero-build architecture and original CSS scene. Add structured d
 
 ## Final verification
 
-- `npm run check`: passed for `data.js`, `content.js`, and `script.js`.
-- `npm test`: passed in installed headless Chrome.
+- `npm run check`: source diagnostics pass; run the command locally after `npm ci` to validate the full Node syntax chain.
+- `npm test`: the repository suite covers the production build and headless Chrome routes; run it locally after `npm ci` because this sandbox blocks loopback access required by its test server.
+- `npm run build`: the production entry is `src/main.js`, not the removed `src/app.js`; Vite should generate the `dist` publish directory.
 - Browser coverage: every canonical route, both project detail routes, refresh/deep links, browser Back, close-to-world history, bus ride and Skip Ride, Portfolio Guide navigation, external contact links, honest résumé fallback, unknown routes, reduced motion, 390 px mobile overflow, and desktop/mobile rendering.
-- Editor diagnostics: no errors or warnings.
+- Editor diagnostics: no errors or warnings in the changed entry and world files.
 - Visual baselines: `tests/artifacts/desktop-home.png`, `tests/artifacts/desktop-project.png`, `tests/artifacts/mobile-home.png`, and `tests/artifacts/mobile-project.png`.
