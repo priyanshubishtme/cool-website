@@ -34,8 +34,8 @@ Books and Notes intentionally show empty states until real entries are provided.
 
 The site is publishable without these files, but adding the real versions will replace the honest empty states and illustrative artwork:
 
-- `resume.pdf` in the project root — the current Résumé link shows a message until the real PDF is present.
-- `profile.png` in the project root — the portrait used in the welcome card. Use a web-optimised PNG or replace the path in `index.html` if you prefer another format.
+- `public/resume.pdf` — the current Résumé link shows a message until the real PDF is present.
+- `public/profile.png` — the portrait used in the welcome card. Use a web-optimised PNG or replace the path in `index.html` if you prefer another format.
 - Project evidence for `AshaPure` and `Arena Self-Driving`: repository URLs, live demo URLs, screenshots, and any measured results you want shown. Add verified links to `data.js`; do not add invented evidence.
 - Books and Notes entries: real book titles, reading status, takeaways, and note content. Add them to `data.js` and the relevant renderer in `content.js`.
 - Optional reference material: `reference/little-universe-brief.md` and `reference/reference-video.mp4` if visual comparison or future content audits are needed. These are not required for deployment.

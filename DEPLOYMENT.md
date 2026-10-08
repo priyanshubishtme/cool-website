@@ -8,7 +8,7 @@ This portfolio is a static Vite site. It needs no application server, database, 
 2. Run `npm run check` and `npm test` locally.
 3. Run `npm run build` and review the production build with `npm run preview`.
 4. Check the home page, project detail pages, contact links, phone road map, desktop welcome dialog, bus travel clear of building footprints, avatar visibility during a ride, and browser refresh on a nested route.
-5. Add `resume.pdf` to the project root only when Priyanshu's real PDF is available. The current resume link is designed to show an honest message while it is absent.
+5. Add `public/resume.pdf` only when Priyanshu's real PDF is available. The current resume link is designed to show an honest message while it is absent.
 
 The build output is `dist/`. Deploy the contents of that directory, not the source directory. Rebuild after source changes; do not hand-edit generated bundle filenames or HTML in `dist/`.
 
