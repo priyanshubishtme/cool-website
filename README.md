@@ -56,12 +56,14 @@ Do not upload private credentials, unpublished client data, or placeholder PDFs/
 
 The 3D world is the primary experience:
 
-1. `src/main.js` starts the world immediately; it does not wait for an idle callback or use a fixed timeout to declare success or failure.
+1. `src/main.js` starts the world immediately and shows the illustrated town behind a startup splash. It waits up to five seconds for genuine 3D readiness; if the physical world has not initialized by then, the splash settles on the interactive 2D town rather than pretending that 3D succeeded.
 2. `src/world/create-world.js` initializes Rapier, the renderer, the town, the procedural character, the bus, input, resize handling, and the initial camera.
 3. The scene matrix is updated and a first frame is rendered before collision-aware camera and label updates begin.
 4. Only after that first render does the world emit `onReady`; the loading card is then removed and the fallback scene is hidden.
-5. If initialization throws, the error includes the failing stage (`physics`, `renderer`, `town`, `character`, `bus`, or `finalizing`), partial resources are disposed, and the 2D map remains available.
+5. If initialization throws before the startup handoff, the error includes the failing stage (`physics`, `renderer`, `town`, `character`, `bus`, or `finalizing`), partial resources are disposed, and the 2D map remains available. The same splash and handoff work on phone-sized screens.
 6. Camera and label raycasts use only registered obstacle meshes, preventing lights, groups, sprites, and incomplete scene objects from causing `matrixWorld` failures.
+
+The entry state is remembered in browser storage after the first 3D-ready or fallback handoff. Reloading the site therefore skips the startup splash; a 3D-ready visit resumes with the town visible while the physical scene rehydrates, and a fallback visit resumes directly in the illustrated town.
 
 There are no GLTF/GLB, remote texture, font, or external model promises in the current world. Buildings, bus, terrain textures, labels, and the character are generated locally in the browser.
 

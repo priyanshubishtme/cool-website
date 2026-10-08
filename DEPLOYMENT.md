@@ -30,7 +30,7 @@ Set the site's base path to `/` when publishing at a domain root, which is the c
 
 ## Asset caching and bundle loading
 
-The Vite build writes content-hashed files under `dist/assets/`. `vite.config.js` keeps Three.js, Rapier, and the world entry in separate chunks. When one changes, unrelated chunks keep their filenames so browsers and CDNs can reuse their cached copies. The physical world is attempted on desktop and mobile; the HTML/CSS town is used only when WebGL or world initialization fails, or when the visitor explicitly chooses `Browse without 3D`.
+The Vite build writes content-hashed files under `dist/assets/`. `vite.config.js` keeps Three.js, Rapier, and the world entry in separate chunks. When one changes, unrelated chunks keep their filenames so browsers and CDNs can reuse their cached copies. The physical world is attempted on desktop and mobile while a startup splash keeps the illustrated town visible. If 3D is not ready within five seconds, the interactive HTML/CSS town becomes the active experience; visitors can also choose `Browse without 3D` immediately.
 
 `netlify.toml` serves `/assets/*` with `Cache-Control: public, max-age=31536000, immutable`. The root and `/index.html` are revalidated on each visit so they can point to the newest chunk hashes. The public portrait gets a one-day cache. Preserve these rules when moving to another host; set equivalent headers for hashed assets and HTML.
 
@@ -38,7 +38,7 @@ Rapier remains a large compressed download (about 1.6 MB gzip in the current bui
 
 ## Runtime and hosting notes
 
-- Serve the built site over HTTPS in production. Browsers with WebGL load the physical Three.js/Rapier scene first, including phone-sized viewports. Browsers that cannot initialize WebGL, or encounters an initialization error, fall back to the clickable HTML/CSS illustrated town and ordinary HTML navigation. The fallback can also be selected manually with `Browse without 3D`.
+- Serve the built site over HTTPS in production. Browsers with WebGL load the physical Three.js/Rapier scene first, including phone-sized viewports, with the same splash and five-second handoff. Browsers that cannot initialize WebGL, or encounter an initialization error, fall back to the clickable HTML/CSS illustrated town and ordinary HTML navigation. The fallback can also be selected manually with `Browse without 3D`.
 - Vite emits source maps. The world entry, Three.js, and Rapier are separate dynamic chunks. Rapier is still over Vite's 500 kB warning threshold, even after chunking; its hashed chunk can be cached separately. Desktop browsers load these modules; phone sized viewports intentionally skip them and use the CSS road map. Semantic portfolio navigation remains available if the module fails.
 - No secrets or server-side environment variables are used by the site.
 - The browser smoke test needs a local Chrome installation at the path documented in the README. This is a development check; the deployed site does not need Chrome or Node at runtime.

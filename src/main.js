@@ -16,6 +16,7 @@ const helpToggle = document.querySelector('[data-toggle-help]');
 const browseFallback = document.querySelector('[data-browse-fallback]');
 const loadingTitle = container?.querySelector('[data-world-loading-title]');
 const loadingDetail = container?.querySelector('[data-world-loading-detail]');
+const loadingOrbit = container?.querySelector('.loading-orbit');
 let nearest = null;
 let currentMode = 'paused';
 let world = null;
@@ -24,6 +25,74 @@ let startedWorld = false;
 let fallbackMode = false;
 let worldState = 'idle';
 let reportedWorldError = false;
+let startupRevealTimer = null;
+let readyMetrics = null;
+
+function completeWorldSplash() {
+  if (!loading || fallbackMode) return;
+  document.body.classList.remove('startup-splash');
+  loadingTitle.textContent = 'Town is ready';
+  loadingDetail.textContent = 'Entering the physical world…';
+  loadingOrbit?.setAttribute('aria-hidden', 'true');
+  loading.classList.add('is-complete');
+  loading.addEventListener('transitionend', () => {
+    loading.hidden = true;
+  }, { once: true });
+}
+
+function revealStartupExperience() {
+  startupRevealTimer = null;
+  document.body.classList.remove('startup-splash');
+  if (fallbackMode) return;
+  if (worldState === 'ready' && readyMetrics) {
+    container.classList.add('world-ready');
+    container.classList.remove('world-failed', 'startup-pending');
+    if (fallback) {
+      fallback.hidden = false;
+      fallback.setAttribute('aria-hidden', 'true');
+    }
+    container.dataset.quality = readyMetrics.lowPower ? 'low' : 'high';
+    completeWorldSplash();
+    window.dispatchEvent(new CustomEvent('world:ready', { detail: readyMetrics }));
+    return;
+  }
+  fallbackMode = true;
+  worldState = 'fallback';
+  if (fallback) {
+    fallback.hidden = false;
+    fallback.setAttribute('aria-hidden', 'false');
+  }
+  container?.classList.add('world-failed');
+  container?.classList.remove('world-ready', 'startup-pending');
+  if (loading) {
+    loadingTitle.textContent = 'Opening the illustrated town';
+    loadingDetail.textContent = 'The 2D map is ready to explore on this device.';
+    loadingOrbit?.setAttribute('aria-hidden', 'true');
+    loading.classList.add('is-complete');
+    loading.addEventListener('transitionend', () => {
+      loading.hidden = true;
+    }, { once: true });
+  }
+  setMode('paused');
+}
+
+function settleOnFallback() {
+  if (worldState === 'ready' || fallbackMode) return;
+  clearTimeout(startupRevealTimer);
+  startupRevealTimer = null;
+  document.body.classList.remove('startup-splash');
+  fallbackMode = true;
+  worldState = 'fallback';
+  if (fallback) {
+    fallback.hidden = false;
+    fallback.setAttribute('aria-hidden', 'false');
+  }
+  container?.classList.add('world-failed');
+  container?.classList.remove('world-ready', 'startup-pending');
+  if (loading) loading.hidden = true;
+  loading?.classList.remove('is-error', 'is-complete');
+  setMode('paused');
+}
 
 function setExpanded(button, panel, open) {
   if (!button || !panel) return;
@@ -45,22 +114,18 @@ function openRoute(route, source = 'world') {
 
 function handleWorldError(error) {
   if (reportedWorldError) return;
+  document.body.classList.remove('startup-splash');
   reportedWorldError = true;
   worldState = 'error';
   const message = error instanceof Error ? error.message : String(error);
   console.error('3D world unavailable:', error);
-  container?.classList.add('world-failed');
-  container?.classList.remove('world-ready');
-  if (fallback) {
-    fallback.hidden = false;
-    fallback.setAttribute('aria-hidden', 'false');
-  }
   if (fallbackMode) {
     if (loading) loading.hidden = true;
     loading?.classList.remove('is-error');
     return;
   }
   if (loading) loading.hidden = false;
+  loading?.classList.remove('is-complete');
   loading?.classList.add('is-error');
   if (loadingTitle) loadingTitle.textContent = '3D town unavailable';
   if (loadingDetail) loadingDetail.textContent = `${message} You can continue with the illustrated town.`;
@@ -75,6 +140,9 @@ async function bootWorld() {
   if (!container) return;
   if (worldState !== 'idle') return;
   worldState = 'initializing';
+  startupRevealTimer = setTimeout(() => {
+    revealStartupExperience();
+  }, 4000);
   if (!('WebGLRenderingContext' in window)) {
     handleWorldError(new Error('WebGL is not available in this browser.'));
     return;
@@ -92,19 +160,18 @@ async function bootWorld() {
       },
       onBusState: (value) => window.dispatchEvent(new CustomEvent('world:bus-state', { detail: value })),
       onReady: (metrics) => {
+        if (fallbackMode) {
+          world?.dispose();
+          return;
+        }
         worldState = 'ready';
+        readyMetrics = metrics;
         reportedWorldError = false;
-        container.classList.add('world-ready');
-        if (!fallbackMode) container.classList.remove('world-failed');
-        if (loading) loading.hidden = true;
-        loading?.classList.remove('is-error');
         loading?.classList.remove('is-error');
         if (fallback) {
           fallback.hidden = false;
-          fallback.setAttribute('aria-hidden', String(!fallbackMode));
+          fallback.setAttribute('aria-hidden', 'true');
         }
-        container.dataset.quality = metrics.lowPower ? 'low' : 'high';
-        window.dispatchEvent(new CustomEvent('world:ready', { detail: metrics }));
       },
       onError: handleWorldError,
     });
@@ -148,14 +215,10 @@ document.querySelectorAll('[data-browse-portfolio]').forEach((link) => link.addE
 }));
 browseFallback?.addEventListener('click', (event) => {
   event.preventDefault();
-  fallbackMode = true;
-  worldState = 'fallback';
+  settleOnFallback();
   if (loading) loading.hidden = true;
   loading?.classList.remove('is-error');
-  if (fallback) {
-    fallback.hidden = false;
-    fallback.setAttribute('aria-hidden', 'false');
-  }
+  if (fallback) fallback.setAttribute('aria-hidden', 'false');
   container?.classList.add('world-failed');
   container?.classList.remove('world-ready');
   container?.querySelector('.fallback-map-note')?.classList.remove('is-visible');

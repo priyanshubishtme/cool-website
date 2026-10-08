@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/style.css">
   <script type="module" src="/src/main.js"></script>
 </head>
-<body>
+<body class="startup-splash">
   <a class="skip-link" href="#quick-links">Skip to portfolio navigation</a>
 
   <dialog class="world-onboarding" id="world-onboarding" aria-labelledby="onboarding-title">
@@ -84,7 +84,7 @@
       </div>
 
       <div class="scene-wrap">
-        <div class="world-3d" id="town" tabindex="0" aria-label="A real-time 3D foothill town. Use WASD or arrow keys to move, drag to orbit, and press E to interact.">
+        <div class="world-3d startup-pending" id="town" tabindex="0" aria-label="A real-time 3D foothill town. Use WASD or arrow keys to move, drag to orbit, and press E to interact.">
           <div class="scene scene-fallback" data-scene-fallback aria-label="Illustrated fallback town with direct destination controls.">
           <svg class="fallback-road" viewBox="0 0 1200 800" preserveAspectRatio="none" aria-hidden="true">
             <path class="fallback-road-edge" d="M710 690 C610 650 520 605 520 510 C520 440 585 390 680 330 C755 280 820 260 915 275 C1000 290 1035 365 1005 465 C985 560 900 635 825 690 C700 705 520 690 390 680 C300 670 285 585 365 520 C420 475 465 470 520 510"/>
@@ -162,7 +162,12 @@
 
           <div class="world-loading" data-world-loading role="status">
             <span class="loading-orbit" aria-hidden="true"></span>
-            <div><strong data-world-loading-title>Preparing the foothill town…</strong><small data-world-loading-detail>Portfolio links are ready while the 3D world loads.</small></div>
+            <div class="world-loading-copy">
+              <span class="loading-kicker">Priyanshu's Little Universe</span>
+              <strong data-world-loading-title>Preparing the foothill town…</strong>
+              <small data-world-loading-detail>Setting the scene<span class="loading-dots" aria-hidden="true"><i></i><i></i><i></i></span></small>
+              <span class="loading-track" aria-hidden="true"><i></i></span>
+            </div>
             <a href="#town" data-browse-fallback>Browse without 3D</a>
           </div>
 
