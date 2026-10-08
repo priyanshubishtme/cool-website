@@ -532,6 +532,7 @@ export function createWorld(options = {}) {
         busState: bus?.state || 'uninitialized',
         busRouteProgress: bus?.progress ?? 0,
         busDistance: bus ? Number(playerPosition.distanceTo(bus.root.position).toFixed(2)) : null,
+        busPosition: bus ? { x: bus.root.position.x, z: bus.root.position.z } : null,
         frameCount,
         averageFps: Number(averageFps.toFixed(1)),
       };

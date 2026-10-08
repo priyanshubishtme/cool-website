@@ -104,6 +104,26 @@ async function holdKeys(cdp, keys, duration = 500) {
   await delay(100);
 }
 
+async function approachBus(cdp) {
+  // The default camera faces +Z: A moves +X and D moves -X.
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const state = await cdp.evaluate('window.LITTLE_UNIVERSE_WORLD.getDebugState()');
+    if (state.busDistance < 2.65) return;
+    const keys = [];
+    keys.push(state.busPosition.x > state.playerPosition.x ? ['a', 'KeyA'] : ['d', 'KeyD']);
+    keys.push(state.busPosition.z > state.playerPosition.z ? ['w', 'KeyW'] : ['s', 'KeyS']);
+    await holdKeys(cdp, keys, 300);
+  }
+  const distance = await cdp.evaluate('window.LITTLE_UNIVERSE_WORLD.getDebugState().busDistance');
+  assert.ok(distance < 3.2, `Could not reach the courtyard bus through movement: ${distance}`);
+}
+
+async function pressInteract(cdp) {
+  await key(cdp, 'rawKeyDown', 'e', 'KeyE');
+  await delay(100);
+  await key(cdp, 'keyUp', 'e', 'KeyE');
+}
+
 async function run() {
   fs.rmSync(profilePath, { recursive: true, force: true });
   fs.mkdirSync(artifactsPath, { recursive: true });
@@ -180,28 +200,58 @@ async function run() {
     await cdp.evaluate("document.querySelector('[data-close]').click()");
     await waitFor(cdp, "location.pathname === '/' && document.querySelector('#content-overlay').hidden", 'close returning to world');
 
-    await cdp.evaluate("window.dispatchEvent(new CustomEvent('world:interact', {detail:{route:'/bus',source:'test'}}))");
+    await cdp.evaluate("window.__busStates=[]; window.addEventListener('world:bus-state', event => window.__busStates.push(event.detail.state))");
+    await cdp.evaluate("window.LITTLE_UNIVERSE_WORLD.returnToCourtyard(); document.querySelector('#town').focus()");
+    await approachBus(cdp);
+    await pressInteract(cdp);
     await waitFor(cdp, "location.pathname === '/bus'", 'bus menu');
     await cdp.evaluate("document.querySelector('[data-bus-stop=\"/projects\"]').click()");
-    await waitFor(cdp, "['departing','driving','arriving'].includes(window.LITTLE_UNIVERSE_WORLD.getDebugState().busState)", 'bus departure');
-    await waitFor(cdp, "location.pathname === '/projects' && window.LITTLE_UNIVERSE_WORLD.getDebugState().busState === 'stopped'", 'completed bus arrival');
+    for (const state of ['departing', 'driving', 'arriving']) {
+      await waitFor(cdp, `window.__busStates.includes('${state}')`, `bus ${state} state`);
+      assert.match(await cdp.evaluate("document.querySelector('#ride-status').textContent"), state === 'driving' ? /road/i : new RegExp(state, 'i'));
+    }
+    await waitFor(cdp, "window.__busStates.includes('stopped') && location.pathname === '/projects'", 'completed bus arrival and destination route');
+    const completedStates = await cdp.evaluate('window.__busStates');
+    assert.ok(['boarding', 'departing', 'driving', 'arriving', 'stopped'].every(state => completedStates.includes(state)), `Missing ride states: ${completedStates}`);
+    const completedOrder = ['boarding', 'departing', 'driving', 'arriving', 'stopped'].map(state => completedStates.indexOf(state));
+    assert.ok(completedOrder.every((index, position) => position === 0 || index > completedOrder[position - 1]), `Bus states were out of order: ${completedStates}`);
+    const arrivalPosition = await cdp.evaluate('window.LITTLE_UNIVERSE_WORLD.getDebugState().playerPosition');
     await cdp.evaluate("document.querySelector('[data-close]').click()");
     await waitFor(cdp, "location.pathname === '/'", 'world after completed bus ride');
+    const returnedPosition = await cdp.evaluate('window.LITTLE_UNIVERSE_WORLD.getDebugState().playerPosition');
+    assert.ok(Math.hypot(returnedPosition.x-arrivalPosition.x, returnedPosition.z-arrivalPosition.z) < .02, 'Closing the destination reset the disembarked world position');
 
-    await cdp.evaluate("window.dispatchEvent(new CustomEvent('world:interact', {detail:{route:'/bus',source:'test'}}))");
+    await cdp.evaluate('window.__busStates=[]; document.querySelector("#town").focus()');
+    await pressInteract(cdp);
     await waitFor(cdp, "location.pathname === '/bus'", 'bus menu after reboarding');
     await cdp.evaluate("document.querySelector('[data-bus-stop=\"/contact\"]').click()");
     await waitFor(cdp, "!document.querySelector('#ride-hud').hidden", 'bus ride HUD');
+    await waitFor(cdp, "window.__busStates.includes('departing')", 'second ride departure');
+    await waitFor(cdp, "window.__busStates.includes('driving')", 'second ride driving');
     await cdp.evaluate("document.querySelector('[data-skip-ride]').click()");
     await waitFor(cdp, "location.pathname === '/contact' && !document.querySelector('#content-overlay').hidden", 'skipped ride destination');
+    assert.equal(await cdp.evaluate("window.LITTLE_UNIVERSE_WORLD.getDebugState().busState"), 'stopped');
+    assert.ok(await cdp.evaluate("window.__busStates.includes('stopped')"), 'Skip Ride did not reset the bus state');
     assert.equal(await cdp.evaluate("document.querySelectorAll('.social-list a').length"), 5);
     assert.equal(await cdp.evaluate("document.querySelector('.email-address').href.startsWith('mailto:')"), true);
     await cdp.evaluate("document.querySelector('[data-close]').click()");
     await waitFor(cdp, "location.pathname === '/'", 'close after bus route');
+    await cdp.evaluate('window.__busStates=[]; document.querySelector("#town").focus()');
+    await pressInteract(cdp);
+    await waitFor(cdp, "location.pathname === '/bus'", 'bus can be reboarded after Skip Ride');
+    await cdp.evaluate("document.querySelector('[data-bus-stop=\"/about\"]').click()");
+    await waitFor(cdp, "location.pathname === '/about' && window.LITTLE_UNIVERSE_WORLD.getDebugState().busState === 'stopped'", 'bus reusable after skipped ride');
+    assert.ok(await cdp.evaluate("window.__busStates.includes('driving') && window.__busStates.includes('stopped')"));
+    await cdp.evaluate("document.querySelector('[data-close]').click()");
+    await waitFor(cdp, "location.pathname === '/'", 'world after third bus ride');
 
     await cdp.evaluate("document.querySelector('.guide-toggle').click()");
     await waitFor(cdp, "!document.querySelector('#guide-panel').hidden", 'guide open');
     assert.equal(await cdp.evaluate("document.querySelector('.guide-toggle').hidden"), true);
+    await key(cdp, 'rawKeyDown', 'Escape', 'Escape'); await key(cdp, 'keyUp', 'Escape', 'Escape');
+    await waitFor(cdp, "document.querySelector('#guide-panel').hidden && document.activeElement === document.querySelector('.guide-toggle')", 'Escape closes guide and restores focus');
+    await cdp.evaluate("document.querySelector('.guide-toggle').click()");
+    await waitFor(cdp, "!document.querySelector('#guide-panel').hidden", 'guide reopened');
     const guidePosition = await cdp.evaluate("window.LITTLE_UNIVERSE_WORLD.getDebugState().playerPosition");
     await cdp.evaluate("document.querySelector('.guide-panel [data-guide-action=\"skills\"]').focus()");
     await holdKeys(cdp, [['w', 'KeyW'], ['e', 'KeyE']], 300);
@@ -242,7 +292,11 @@ async function run() {
     assert.ok(Math.hypot(touchEnd.x-touchStart.x,touchEnd.z-touchStart.z) > .2);
     await cdp.evaluate("document.querySelector('.menu-button').click()");
     assert.equal(await cdp.evaluate("[...document.querySelectorAll('.quick-links .secondary-link')].every(link => getComputedStyle(link).display !== 'none')"), true);
+    assert.equal(await cdp.evaluate("document.body.classList.contains('menu-open') && document.querySelector('.menu-button').getAttribute('aria-expanded') === 'true' && getComputedStyle(document.querySelector('.guide-dock')).display === 'none'"), true, 'Guide launcher overlaps the expanded mobile menu');
     await screenshot(cdp, 'mobile-home.png');
+    await cdp.evaluate("document.querySelector('.menu-button').click()");
+    assert.notEqual(await cdp.evaluate("getComputedStyle(document.querySelector('.guide-dock')).display"), 'none', 'Guide launcher did not return after closing the menu');
+    assert.equal(await cdp.evaluate("document.querySelector('.menu-button').getAttribute('aria-expanded')"), 'false');
     await navigate(cdp, '/projects/arena-self-driving');
     assert.equal(await cdp.evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1'), true);
     await screenshot(cdp, 'mobile-project.png');

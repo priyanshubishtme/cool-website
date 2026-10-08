@@ -202,10 +202,13 @@ export function createTown({ scene, physics, RAPIER, container, lowPower }) {
   }
 
   const stops = new Map();
-  const courtyardPosition = roadCurve.getPointAt(0);
-  const courtyardTangent = roadCurve.getTangentAt(0).normalize();
+  // Keep the loop bus in the courtyard scene while leaving the spawn lane clear.
+  // The stop remains on the road, a short walk from the default player position.
+  const courtyardProgress = .07;
+  const courtyardPosition = roadCurve.getPointAt(courtyardProgress);
+  const courtyardTangent = roadCurve.getTangentAt(courtyardProgress).normalize();
   stops.set('/courtyard', {
-    route: '/courtyard', label: 'Central Courtyard', progress: 0,
+    route: '/courtyard', label: 'Central Courtyard', progress: courtyardProgress,
     position: courtyardPosition, tangent: courtyardTangent,
     disembark: new THREE.Vector3(1.4, .92, 1.4),
   });

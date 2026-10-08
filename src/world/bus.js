@@ -15,6 +15,7 @@ function part(parent, geometry, mat, position) {
 export function createBus({ scene, curve, stops, onState, onArrive }) {
   const root = new THREE.Group();
   root.name = 'foothill-loop-bus';
+  root.scale.setScalar(.8);
   scene.add(root);
   const teal = material(0x197c7a);
   const amber = material(0xf1b746);
