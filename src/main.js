@@ -1,3 +1,6 @@
+import '../data.js';
+import '../content.js';
+import '../script.js';
 
 const container = document.querySelector('#town');
 const loading = container?.querySelector('[data-world-loading]');
